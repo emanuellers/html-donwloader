@@ -1,20 +1,22 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"regexp"
+	"strings"
 )
 
 const (
-	HrefAttribute = `href="(.*?)".*?`
+	Hiperlinks   = `"(http://|https://).*?"` //
+	InsideQuotes = `"(.*?)"`
 )
 
-type Request struct{}
+type Html struct{}
 
-func (r *Request) GetBufferResponse(url string) ([]byte, error) {
+func (r *Html) GetBufferResponse(url string) ([]byte, error) {
 	request, err := http.Get(url)
 
 	if err != nil {
@@ -30,7 +32,7 @@ func (r *Request) GetBufferResponse(url string) ([]byte, error) {
 
 	return buffer, nil
 }
-func (r Request) GetPageHtmlToFile(url string, filename string) error {
+func (r Html) GetPageHtmlToFile(url string, filename string) error {
 	buffer, err := r.GetBufferResponse(url)
 	if err != nil {
 		panic(err)
@@ -45,15 +47,18 @@ func (r Request) GetPageHtmlToFile(url string, filename string) error {
 	return err
 }
 
-func (r *Request) GetHiperlinks(buffer []byte, max int) []string {
-	expression := regexp.MustCompile(HrefAttribute)
+func (r *Html) GetHiperlinks(buffer []byte, max int) []string {
+	expression := regexp.MustCompile(Hiperlinks)
 	matches := expression.FindAllString(string(buffer), len(buffer))
+	return matches
+}
 
-	//for _, match := range matches {
-	//	match = match[4:]
-	//	fmt.Println(match[4:])
-	//}
+func (r *Html) CheckFuntionalUrls(url string) int {
+	request, err := http.Get(strings.ReplaceAll(url, "\"", ""))
+	if err != nil {
+		log.Panic(err)
+	}
 
-	fmt.Println(matches)
-	return nil
+	return request.StatusCode
+
 }
